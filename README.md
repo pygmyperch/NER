@@ -5,7 +5,7 @@ This repository contains code to perform the analyses and modeling described in 
 Brauer CJ, Sandoval-Castillo J, Gates K, Hammer M, Unmack PJ, Bernatchez L, and Beheregaray, LB "Natural hybridisation reduces vulnerability to climate change (*accepted*).
 
 
-![Figure 1](../main/images/Figure1_hires_vector.pdf) "**Figure 1. Sampling locations and spatial patterns of hybridisation for *Melanotaenia splendida*, Malanda rainbowfish, *M. eachamensis*, *M. utcheensis* and Tully rainbowfish.** A) Sampling sites in the Wet Tropics of Queensland, Australia. B) Admixture plots for K=5 ancestral species. C) Treemix maximum likelihood tree showing introgression among species. D) Topographic relief profile indicating the difference in elevation between upland and lowland habitat along a transect between sites 13 and 35."
+![Figure 1](../main/images/Figure1_hires_vector.jpg) "**Figure 1. Sampling locations and spatial patterns of hybridisation for *Melanotaenia splendida*, Malanda rainbowfish, *M. eachamensis*, *M. utcheensis* and Tully rainbowfish.** A) Sampling sites in the Wet Tropics of Queensland, Australia. B) Admixture plots for K=5 ancestral species. C) Treemix maximum likelihood tree showing introgression among species. D) Topographic relief profile indicating the difference in elevation between upland and lowland habitat along a transect between sites 13 and 35."
 
 
 ## Abstract
