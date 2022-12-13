@@ -19,13 +19,4 @@ The *Melanotaenia duboulayi* reference genome assembly is available at NCBI GenB
 [SNP genotypes](https://doi.org/10.6084/m9.figshare.21692918)
 
 
-## Analyses
-
-[Environmental niche models](https://github.com/pygmyperch/NER/tree/main/EnvironmentalNicheModels)
-
-
-[Genotype-environment association](https://github.com/pygmyperch/NER/tree/main/GenotypeEnvironmentAssociation)
- 
-
-[Genomic vulnerability](https://github.com/pygmyperch/NER/tree/main/GenomicVulnerability)
-
+## A zip file containing all data and R code for the analyses can be downloaded [here](https://github.com/pygmyperch/NER/archive/refs/heads/main.zip)
