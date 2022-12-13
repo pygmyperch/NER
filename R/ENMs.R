@@ -3,168 +3,44 @@ library(biomod2)
 library(raster)
 library(sp)
 library(rgeos)
+library(scales)
 
 
-# Data sources
+# Raw data sources
 # https://chelsa-climate.org/bioclim/ # current
 # https://chelsa-climate.org/future/ # future
 # http://www.paleoclim.org # past (using late holocene 4.2-0.3 ka)
 
 
 # set some path variables
-setwd("/Users/chrisbrauer/GoogleDrive/git_repos/NER/EnvironmentalNicheModels/")
-path <- "/Users/chrisbrauer/GoogleDrive/git_repos/NER/EnvironmentalNicheModels/"
-# set path to MaxEnt
+path <- "/Users/chrisbrauer/GoogleDrive/Narrow_endemicRF/bioinfo/genome_call/GEA/GEA_GV_MS/test/"
+#setwd("/PATH/TO/WD/")
+#path <- "/PATH/TO/WD/"
+
 MaxEnt.path <- "/Users/chrisbrauer/Analysis/maxent/"
-#setwd("/PATH/TO/EnvironmentalNicheModels/")
 
 
-# define function to fix potential errors in rasters by masking out any cells that contain NA for any layer
-# intersect_mask <- function(x){
-#   values_x <- getValues(x)
-#   inter_x <- values_x %*% rep(1,nlayers(x))
-#   mask <- setValues(subset(x,1),values = (inter_x>0))
-#   return(mask)
-# }
+#####################################################################################
+############################ get formatted raster stacks ############################
+setwd("/PATH/TO/data/environmental_rasters/")
 
+for (i in c("EH", "MH", "LH", "current", "rcp45_2070", "rcp85_2070")) {
+  files <- list.files(path = i, all.files = TRUE, recursive=F, full.names=T, pattern = "\\.grd$")
+  rasters <- stack(c(files))
+  assign(paste(i,".rasters", sep=""),rasters)
+}
 
-# define study area to crop all rasters
-poly <- readWKT("POLYGON((142.5 -10.6, 144.7 -10.6, 151 -20, 153 -26, 149.2 -26, 145.8 -23.7, 143.1 -17.7, 141.4 -10.6, 142.5 -10.6))", p4s = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
-
-
-#format and align rasters (not run)
-######################################################################
-# # current climate data
-# setwd("/Users/chrisbrauer/Projects/narrow_endemics/MS/niche_models/biomod/CHELSA_data/current/envicloud/chelsa/chelsa_V1/climatologies/bio")
-# CHELSA_current.files <- list.files(all.files = TRUE, recursive=F, full.names=T, pattern = "\\.tif$")
-# RawCurrent <- stack(c(CHELSA_current.files))
-# current.rasters <- crop(RawCurrent, poly)
-# current.rasters <- mask(current.rasters,poly)
-# # mask out any cells that contain NA for any layer
-# current.rasters <- stack(mask(current.rasters, intersect_mask(current.rasters)))
-# 
-# 
-# ######### Past climate data (three time periods spanning 300ya-12ka)
-# ######### late holocene (4.2-0.3 ka)
-# setwd("/Users/chrisbrauer/Projects/narrow_endemics/MS/niche_models/biomod/CHELSA_data/paleo/late_holocene/LH_v1_2_5m")
-# CHELSA_LH.files <- list.files(all.files = TRUE, recursive=F, full.names=T, pattern = "\\.tif$")
-# RawLH <- stack(c(CHELSA_LH.files))
-# # clip to study area polygon
-# LH.rasters <- crop(RawLH, poly)
-# LH.rasters <- mask(LH.rasters,poly)
-# # resample to match 30 second resolution of current and future rasters
-# RawLH.hires <- resample(LH.rasters, current.rasters)
-# 
-# # mask out any cells that contain NA for any layer
-# LH.rasters = stack(mask(RawLH.hires, intersect_mask(RawLH.hires)))
-# 
-# # check extents match
-# stopifnot(all(extent(LH.rasters) == extent(current.rasters)))
-# 
-# ######### mid holocene (8.326-4.2 ka)
-# setwd("/Users/chrisbrauer/Projects/narrow_endemics/MS/niche_models/biomod/CHELSA_data/paleo/mid_holocene/MH_v1_2_5m")
-# CHELSA_MH.files <- list.files(all.files = TRUE, recursive=F, full.names=T, pattern = "\\.tif$")
-# RawMH <- stack(c(CHELSA_MH.files))
-# # clip to study area polygon
-# MH.rasters <- crop(RawMH, poly)
-# MH.rasters <- mask(MH.rasters,poly)
-# # resample to match 30 second resolution of current and future rasters
-# RawMH.hires <- resample(MH.rasters, current.rasters)
-# 
-# # mask out any cells that contain NA for any layer
-# MH.rasters = stack(mask(RawMH.hires, intersect_mask(RawMH.hires)))
-# 
-# # check extents match
-# stopifnot(all(extent(MH.rasters) == extent(current.rasters)))
-# 
-# 
-# 
-# ######### early holocene (11.7-8.326 ka)
-# setwd("/Users/chrisbrauer/Projects/narrow_endemics/MS/niche_models/biomod/CHELSA_data/paleo/early_holocene/EH_v1_2_5m")
-# CHELSA_EH.files <- list.files(all.files = TRUE, recursive=F, full.names=T, pattern = "\\.tif$")
-# RawEH <- stack(c(CHELSA_EH.files))
-# # clip to study area polygon
-# EH.rasters <- crop(RawEH, poly)
-# EH.rasters <- mask(EH.rasters,poly)
-# # resample to match 30 second resolution of current and future rasters
-# RawEH.hires <- resample(EH.rasters, current.rasters)
-# 
-# # mask out any cells that contain NA for any layer
-# EH.rasters = stack(mask(RawEH.hires, intersect_mask(RawEH.hires)))
-# 
-# # check extents match
-# stopifnot(all(extent(EH.rasters) == extent(current.rasters)))
-# 
-# 
-# ######## future scenarios based on ACCESS1 circulation model
-# # 2070 rcp45
-# setwd("/Users/chrisbrauer/Projects/narrow_endemics/MS/niche_models/biomod/CHELSA_data/2070/envicloud/chelsa/chelsa_V1/cmip5/2061-2080/bio/rcp45")
-# rcp45_2070.files <- list.files(all.files = TRUE, recursive=F, full.names=T, pattern = "\\.tif$")
-# RawRcp45 <- stack(c(rcp45_2070.files))
-# rcp45_2070.rasters <- crop(RawRcp45, poly)
-# rcp45_2070.rasters <- mask(rcp45_2070.rasters,poly)
-# # mask out any cells that contain NA for any layer
-# rcp45_2070.rasters <- stack(mask(rcp45_2070.rasters, intersect_mask(rcp45_2070.rasters)))
-# 
-# # check extents match
-# stopifnot(all(extent(rcp45_2070.rasters) == extent(current.rasters)))
-# 
-# 
-# # 2070 rcp85
-# setwd("/Users/chrisbrauer/Projects/narrow_endemics/MS/niche_models/biomod/CHELSA_data/2070/envicloud/chelsa/chelsa_V1/cmip5/2061-2080/bio/rcp85")
-# rcp85_2070.files <- list.files(all.files = TRUE, recursive=F, full.names=T, pattern = "\\.tif$")
-# RawRcp85 <- stack(c(rcp85_2070.files))
-# rcp85_2070.rasters <- crop(RawRcp85, poly)
-# rcp85_2070.rasters <- mask(rcp85_2070.rasters,poly)
-# # mask out any cells that contain NA for any layer
-# rcp85_2070.rasters <- stack(mask(rcp85_2070.rasters, intersect_mask(rcp85_2070.rasters)))
-# 
-# # check extents match
-# stopifnot(all(extent(rcp85_2070.rasters) == extent(current.rasters)))
-# 
-# 
-# # make layer names the same for all data (two sets as original data not all ordered the same way (CHELSA current data has padded 0s, future and PaleoClim data does not))
-# # i.e. bio01, bio02... vs. bio1, bio10...
-# bioclim.CHELSA.names <- c("bio_01", "bio_02", "bio_03", "bio_04", "bio_05", "bio_06", "bio_07", "bio_08", "bio_09",
-#                            "bio_10", "bio_11", "bio_12", "bio_13", "bio_14", "bio_15", "bio_16", "bio_17", "bio_18", "bio_19")
-# 
-# bioclim.PaleoClim.names <- c("bio_01",  "bio_10", "bio_11", "bio_12", "bio_13", "bio_14", "bio_15", "bio_16", "bio_17", "bio_18",
-#                              "bio_19", "bio_02",  "bio_03",  "bio_04",  "bio_05",  "bio_06",  "bio_07",  "bio_08",  "bio_09")
-# 
-# 
-# names(current.rasters) <- bioclim.CHELSA.names
-# names(LH.rasters) <- bioclim.PaleoClim.names
-# names(MH.rasters) <- bioclim.PaleoClim.names
-# names(EH.rasters) <- bioclim.PaleoClim.names
-# names(rcp45_2070.rasters) <- bioclim.PaleoClim.names
-# names(rcp85_2070.rasters) <- bioclim.PaleoClim.names
-# 
-# # save cropped and aligned data
-# for (i in c("EH", "MH", "LH", "current", "rcp45_2070", "rcp85_2070")) {
-#   dir.create(paste0(i),  showWarnings = FALSE)
-# }
-# writeRaster(EH.rasters, "EH/EH.rasters.grd", bylayer=TRUE, suffix=bioclim.PaleoClim.names)
-# writeRaster(MH.rasters, "MH/MH.rasters.grd", bylayer=TRUE, suffix=bioclim.PaleoClim.names)
-# writeRaster(LH.rasters, "LH/LH.rasters.grd", bylayer=TRUE, suffix=bioclim.PaleoClim.names)
-# writeRaster(current.rasters, "current/current.rasters.grd", bylayer=TRUE, suffix=bioclim.CHELSA.names)
-# writeRaster(rcp45_2070.rasters, "rcp45_2070/rcp45_2070.rasters.grd", bylayer=TRUE, suffix=bioclim.PaleoClim.names)
-# writeRaster(rcp85_2070.rasters, "rcp85_2070/rcp85_2070.rasters.grd", bylayer=TRUE, suffix=bioclim.PaleoClim.names)
-#########################################
-
-# load data
+#####################################################################################
+############################ get occurrence data ############################
+setwd("/PATH/TO/data")
 #Import occurrence data for all species
 DataSpecies <- read.csv("occurrence_data.csv", header=TRUE)
 
-# import rasters
-for (i in c("current", "EH", "MH", "LH", "rcp45_2070", "rcp85_2070")) {
-  dir.create(paste0(i),  showWarnings = FALSE)
-  
-raster.files <- list.files(path = paste0(path,"environmental_rasters/",i), all.files = TRUE, recursive=F, full.names=T, pattern = "\\.grd$")
-rasters <- stack(c(raster.files))
-assign(paste0(i,".rasters"),rasters)
 
-}
-
+#######################################################################################
+################################### Run analyses ##########################
+setwd("/PATH/TO/WD")
+setwd("/Users/chrisbrauer/GoogleDrive/Narrow_endemicRF/bioinfo/genome_call/GEA/GEA_GV_MS/test/")
 
 # make dir tree
 for (i in c("splendida", "eachamensis", "utcheensis", "Malanda")) {
@@ -283,7 +159,7 @@ writeRaster(subset(proj.stk, 1), filename=paste0(i,"_CurrentMeanEM.asc"), overwr
 
 
 
-# plot weighted mean by ROC model
+# set plot extent
 MyXFrm <- 140
 MyXTo <- 155
 MyXStp <- 5
@@ -658,29 +534,82 @@ rcp45_2070.binary_rep <- BinaryTransformation(proj.stkrcp45_2070[[1]], 700)
 rcp85_2070.binary_rep <- BinaryTransformation(proj.stkrcp85_2070[[1]], 700)
 
 
-# calculate range at each time point
+# calculate relative range at each time point
 EH.range <- as.matrix(table(as.numeric(as.vector(EH.binary_rep))))
-EH.range
-
 MH.range <- as.matrix(table(as.numeric(as.vector(MH.binary_rep))))
-MH.range
-
 LH.range <- as.matrix(table(as.numeric(as.vector(LH.binary_rep))))
-LH.range
-
 current.range <- as.matrix(table(as.numeric(as.vector(current.binary_rep))))
-current.range
-
 rcp45_2070.range <- as.matrix(table(as.numeric(as.vector(rcp45_2070.binary_rep))))
-rcp45_2070.range
-
 rcp85_2070.range <- as.matrix(table(as.numeric(as.vector(rcp85_2070.binary_rep))))
-rcp85_2070.range
 
 
-# table of range change over time
+
+# table of range changes over time
+if (!dir.exists(paste0(path,"range"))) {dir.create(paste0(path,"range"))}
+setwd(paste0(path,"range"))
 range <- cbind(EH.range, MH.range, LH.range, current.range, rcp45_2070.range, rcp85_2070.range)
 colnames(range) <- c("EH", "MH", "LH", "Current", "rcp45_2070", "rcp85_2070")
 write.csv(range, paste0(i,"_range.csv"))
 
 }
+
+
+# Plot Figure 2: changes in suitable habitat over time for each species
+setwd(paste0(path,"range"))
+
+malanda.range <- read.csv("malanda.range.csv", row.names = 1)
+eachamensis.range <- read.csv("eachamensis_range.csv", row.names = 1)
+utcheensis.range <- read.csv("utcheensis_range.csv", row.names = 1)
+splendida.range <- read.csv("splendida_range.csv", row.names = 1)
+
+dat <- as.matrix(rbind((malanda.range[2,]), (eachamensis.range[2,]), (utcheensis.range[2,]), (splendida.range[2,])))
+colnames(dat) <- c("Early-Holocene", "Mid-Holocene", "Late-Holocene", "Current", "2070 RCP4.5", "2070 RCP8.5")
+
+NE_colors <- ggpubfigs::friendly_pal("ito_seven")[c(5,2,1,4,3)]
+cols <- NE_colors[c(1,2,4,3)]
+
+leg.labs <- c(substitute(paste("Malanda")),
+              substitute(paste(italic("M. eachamensis"))),
+              substitute(paste(italic("M. utcheensis"))),
+              substitute(paste(italic("M. splendida"))))
+
+
+x <- 10 ^ (2:5)
+labs <- scientific_format(1)(x)
+
+setwd(path)
+
+#setEPS()
+pdf(file = "habitat_suitabilityMS.pdf", height = 6, width = 8)
+par(oma = c(4, 2, 1, 1), bg = "#fdf6e3", fg="#073642")
+
+barplot(dat, log="y",
+        col=cols, mgp=c(2,-0.5,.5),
+        border="#fdf6e3", 
+        cex.names = 0.6,
+        cex.axis = 0.6, ylim=c(10,100000),
+        beside=TRUE, axes = FALSE,
+        legend=FALSE,
+        cex.lab=0.8,
+        col.lab="#073642", col.axis="#073642")
+axis(2, cex.axis = 0.6, at = c(10,100,1000,10000,100000), labels=c(0,labs), las=1, col="#073642", col.lab="#073642", col.axis="#073642")
+title(ylab=expression("log(habitat area)"), line=2.5, cex.lab=0.7, col="#073642", col.lab="#073642")
+par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+inset.x <- 0.1
+inset.y <- 0.23
+
+# plot legend
+for (i in 1:4) {
+  # start inset y at 0.15 and place each successive legend element 0.03 to the right
+  inset.x <- inset.x+0.15
+  
+  legend("bottomleft", xpd = TRUE, horiz = TRUE, inset = c(inset.x,inset.y), legend = leg.labs[[i]], col=cols[i], 
+         bty = "n", pch = 15, cex = 0.6, pt.cex = 1)
+}
+
+dev.off()
+
+
+
+
