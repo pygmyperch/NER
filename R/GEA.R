@@ -173,7 +173,8 @@ env.site.current <- cbind.data.frame(coordinates(sites),NEXY$species, env.site.c
 #######################################################################################
 ################################### get genotypes ##########################
 
-NE_LD300 <- read.structure("NE342LD300.stru", n.ind=342, n.loc=13734, onerowperind=FALSE, col.lab=1, col.pop = 1, col.others=FALSE, row.marknames=1, NA.char="-9", ask=TRUE, quiet=FALSE)
+NE_LD300 <- read.structure("NE342LD300.stru", n.ind=342, n.loc=13734, onerowperind=FALSE, col.lab=1, col.pop = 1, 
+                           col.others=FALSE, row.marknames=1, NA.char="-9", ask=TRUE, quiet=FALSE)
 NEpops <- read.table("NE342_popmap.txt", header = FALSE)
 NE_LD300$pop <- as.factor(NEpops[,2])
 NE_LD300
