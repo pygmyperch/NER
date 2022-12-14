@@ -13,15 +13,17 @@ library(scales)
 
 
 # set some path variables
-path <- "/Users/chrisbrauer/GoogleDrive/Narrow_endemicRF/bioinfo/genome_call/GEA/GEA_GV_MS/test/"
-#setwd("/PATH/TO/WD/")
-#path <- "/PATH/TO/WD/"
+# path to working directory
+setwd("/PATH/TO/WD/")
+path <- "/PATH/TO/WD/"
 
-MaxEnt.path <- "/Users/chrisbrauer/Analysis/maxent/"
+# path to directory containing maxent.jar
+MaxEnt.path <- "/PATH/TO/maxent_dir/"
 
 
 #####################################################################################
 ############################ get formatted raster stacks ############################
+# path to rasters
 setwd("/PATH/TO/data/environmental_rasters/")
 
 for (i in c("EH", "MH", "LH", "current", "rcp45_2070", "rcp85_2070")) {
@@ -32,6 +34,7 @@ for (i in c("EH", "MH", "LH", "current", "rcp45_2070", "rcp85_2070")) {
 
 #####################################################################################
 ############################ get occurrence data ############################
+# path to data directory
 setwd("/PATH/TO/data")
 #Import occurrence data for all species
 DataSpecies <- read.csv("occurrence_data.csv", header=TRUE)
@@ -39,11 +42,11 @@ DataSpecies <- read.csv("occurrence_data.csv", header=TRUE)
 
 #######################################################################################
 ################################### Run analyses ##########################
+# path to working directory
 setwd("/PATH/TO/WD")
-setwd("/Users/chrisbrauer/GoogleDrive/Narrow_endemicRF/bioinfo/genome_call/GEA/GEA_GV_MS/test/")
 
-# make dir tree
-for (i in c("splendida", "eachamensis", "utcheensis", "Malanda")) {
+# Run analyses for each species
+for (i in c("splendida", "eachamensis", "utcheensis", "malanda")) {
   dir.create(paste0(i),  showWarnings = FALSE)
 
 
@@ -550,6 +553,7 @@ setwd(paste0(path,"range"))
 range <- cbind(EH.range, MH.range, LH.range, current.range, rcp45_2070.range, rcp85_2070.range)
 colnames(range) <- c("EH", "MH", "LH", "Current", "rcp45_2070", "rcp85_2070")
 write.csv(range, paste0(i,"_range.csv"))
+setwd(path)
 
 }
 
@@ -557,7 +561,7 @@ write.csv(range, paste0(i,"_range.csv"))
 # Plot Figure 2: changes in suitable habitat over time for each species
 setwd(paste0(path,"range"))
 
-malanda.range <- read.csv("malanda.range.csv", row.names = 1)
+malanda.range <- read.csv("malanda_range.csv", row.names = 1)
 eachamensis.range <- read.csv("eachamensis_range.csv", row.names = 1)
 utcheensis.range <- read.csv("utcheensis_range.csv", row.names = 1)
 splendida.range <- read.csv("splendida_range.csv", row.names = 1)
