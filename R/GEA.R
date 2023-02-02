@@ -8,7 +8,7 @@ library(psych)
 library(memgene)
 library(ggpubfigs)
 
-# define functions
+# define utility functions
 vif_func<-function(in_frame,thresh=10,trace=T,...){
   
   require(fmsb)

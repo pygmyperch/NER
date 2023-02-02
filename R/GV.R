@@ -4,6 +4,10 @@
 library(adegenet)
 library(raster)
 library(AlleleShift)
+library(dplyr)
+library(stringi)
+library(tidyverse)
+
 
 
 # define modified AlleleShift plotting function to use custom colours etc.
@@ -90,22 +94,48 @@ population.shift_cb <- function (baseline.env.data, future.env.data, title, from
   return(plotggx)
 }
 
+# define function to extract allele frequency deltas
+get.deltaAF <- function (freq.future) {
+  
+  # function modified from AlleleShift::shift.dot.ggplot
+  
+  np <- length(unique(freq.future$Pop))
+  
+  freq.columns <- cbind(freq.future$Allele.freq, freq.future$Freq.e2, 
+                        freq.future$LCL, freq.future$UCL)
+  freq.means <- stats::aggregate(freq.columns ~ freq.future$Pop, 
+                                 FUN = stats::median)
+  names(freq.means)[1] <- "Pop"
+  freq.means <- dplyr::left_join(freq.future[, c("Pop", 
+                                                 "Allele.freq")], freq.means, by = "Pop")
+  freq.future$Allele.freq <- freq.means$V1
+  freq.future$Freq.e2 <- freq.means$V2
+  freq.future$LCL <- freq.means$V3
+  freq.future$UCL <- freq.means$V4
+  freq.future <- freq.future[1:np, ]
+  freq.future$increasing <- freq.future$Freq.e2 > freq.future$Allele.freq
+  freq.future$Allele <- factor(rep("Alleles aggregated", 
+                                   np))
+  
+  #freq.future$Pop <- droplevels(freq.future$Pop)
+  
+  #deltaAF <- as.data.frame(cbind(levels(freq.future$Pop), freq.future$Allele.freq-freq.future$Freq.e2))
+  #colnames(deltaAF) <- c("Pop", "deltaAF")
+  
+  deltaAF <- as.data.frame(freq.future$Allele.freq-freq.future$Freq.e2)
+  colnames(deltaAF) <- c("deltaAF")
+  
+  return(deltaAF)
+}
 
 setwd("/PATH/TO/data")
 load("genomic_vulnerability.RData")
 
-# # get site coords
-# NEXY <- read.table("NE_GEA_XY.txt", header = TRUE)
-# coords <- data.frame(x=NEXY$x,y=NEXY$y)
-# sites <- SpatialPoints(coords, proj4string = CRS(as.character("+proj=longlat +datum=WGS84 +no_defs")))
-# 
-# NEpops <- read.table("NE342_popmap.txt", header = FALSE)
-
 
 ############# get admixture proportions and define hybrid and pure inds #############
 #####
-# get site averages and reorder as per genetic data
-admix <- read.table("/Users/chrisbrauer/GoogleDrive/Narrow_endemicRF/bioinfo/genome_call/admixture/supervised/NE342MS_LD300_bed.5.Q")
+# get site averages from ADMIXTURE Qmatrix and reorder as per genetic data
+admix <- read.table("NE342MS_LD300_bed.5.Q")
 admix <- cbind(NEpops[,2],admix)
 colnames(admix) <- c("site", "splendida", "Malanda", "eachamensis", "utcheensis", "Tully")
 
@@ -115,9 +145,24 @@ mean_admix <- admix %>% group_by(site) %>% summarize(splendida = mean(splendida)
                                                      eachamensis = mean(eachamensis), utcheensis = mean(utcheensis), Tully = mean(Tully))
 
 # check rows match (doesn't work with pop number AF matrix)
-stopifnot(all(rownames(NEaf) == mean_admix[,1]))
-stopifnot(all(rownames(NEaf) == as.character(pop.data[,1])))
+#stopifnot(all(rownames(NEaf) == mean_admix[,1]))
+#stopifnot(all(rownames(NEaf) == as.character(pop.data[,1])))
 stopifnot(all(mean_admix[,1] == as.character(pop.data[,1])))
+
+# get hybrid and pure pops
+eacham_splendida.hybrids <- mean_admix[mean_admix$splendida > 0.1 & mean_admix$eachamensis > 0.1 & mean_admix$Tully < 0.05 & mean_admix$utcheensis < 0.05 & mean_admix$Malanda < 0.05, ]
+Malanda_splendida.hybrids <- mean_admix[mean_admix$splendida > 0.1 & mean_admix$eachamensis < 0.05 & mean_admix$Tully < 0.05 & mean_admix$utcheensis < 0.05 & mean_admix$Malanda > 0.1, ]
+utchee_splendida.hybrids <- mean_admix[mean_admix$splendida > 0.1 & mean_admix$eachamensis < 0.05 & mean_admix$Tully < 0.05 & mean_admix$utcheensis > 0.1 & mean_admix$Malanda < 0.05, ]
+Tully_splendida.hybrids <- mean_admix[mean_admix$splendida > 0.1 & mean_admix$eachamensis < 0.05 & mean_admix$Tully > 0.1 & mean_admix$utcheensis < 0.05 & mean_admix$Malanda < 0.05, ]
+
+splendida.pops <- mean_admix[mean_admix$splendida > 0.95, ]
+eacham.pops <- mean_admix[mean_admix$eachamensis > 0.95, ]
+Malanda.pops <- mean_admix[mean_admix$Malanda > 0.95, ]
+utchee.pops <- mean_admix[mean_admix$utcheensis > 0.95, ]
+Tully.pops <- mean_admix[mean_admix$Tully > 0.95, ]
+
+pure.pops <- as.data.frame(c(splendida.pops$site, eacham.pops$site, Malanda.pops$site, utchee.pops$site, Tully.pops$site))
+hybrid.pops <- as.data.frame(c(eacham_splendida.hybrids$site, Malanda_splendida.hybrids$site, utchee_splendida.hybrids$site))
 
 
 #####################################################################################
@@ -132,7 +177,7 @@ for (i in c("EH", "MH", "LH", "current", "rcp45_2070", "rcp85_2070")) {
 
 
 
-# generate environmental data for each time period
+# format environmental data for each time period
 # current
 current_var <- cbind(pop.data$bio_05, pop.data$bio_19)
 colnames(current_var) <- c("bio_05", "bio_19")
@@ -254,7 +299,6 @@ model.fit
 write.csv(model.fit, "GV211_calibration_model_fit.csv")
 
 # identify list of pops for which the model performs poorly (R2<0.5) to omit from the final analyses
-# and remove splendida
 retained.pops <- droplevels(as.data.frame(model.fit$Pop[model.fit$GAM.rsq>0.5]))
 colnames(retained.pops) <- "pop"
 retained.pops$popNumber <- sprintf("%02d", as.numeric(gsub("[[:alpha:]]", "", as.character(retained.pops$pop))))
@@ -335,6 +379,69 @@ head(genp.freq.EH)
 # reduce to retained pops
 reduced.genp.freq.EH <- genp.freq.EH[genp.freq.EH$Pop %in% retained.pops[,1],]
 
+# summarise number of maladapted alleles fixed per population for all pops
+af.cand <- makefreq(genp.candidates, missing="0")
+
+# get adaptive allele freqs
+adapt.allele.freq <- af.cand[, colnames(af.cand) %in% unique(reduced.genp.freq.rcp85_2070$Allele)]
+# count number of loci where adaptive allele is missing from pop
+res3 <- as.data.frame(apply(adapt.allele.freq, 1, function(x) sum(x == 0)))
+colnames(res3) <- "adapt.allele.missing"
+barplot(res3$adapt.allele.missing)
+
+rownames(res3) %in% hybrid.pops[,1]
+pure.hybrid <- as.data.frame(ifelse(rownames(res3) %in% hybrid.pops[,1], "Hybrid", "Pure"))
+pure.hybrid.species <- cbind(res3, species.pop, pure.hybrid)
+colnames(pure.hybrid.species) <- c("adapt.allele.missing", "species", "hybrid")
+write.csv(pure.hybrid.species, "pure_hybrid_species.csv")
+
+# mean number of missing alleles
+adapt.allele.missing <- aggregate(pure.hybrid.species$adapt.allele.missing ~ species + hybrid, data=pure.hybrid.species, mean)
+colnames(adapt.allele.missing) <- c("species", "hybrid", "adapt.allele.missing")
+adapt.allele.missing$percent <- adapt.allele.missing$adapt.allele.missing/211*100
+adapt.allele.missing <- adapt.allele.missing[order(adapt.allele.missing$hybrid, decreasing = T), ]
+adapt.allele.missing <- adapt.allele.missing[order(adapt.allele.missing$species),]
+write.csv(adapt.allele.missing, "adapt_allele_missing.csv")
+
+
+# plot candidate alleles missing hybrid vs pure for each species
+NE_colors <- ggpubfigs::friendly_pal("ito_seven")[c(2,5,1,3,4)]
+scales::show_col(NE_colors)
+names(NE_colors) = levels(NE_species)
+
+
+
+bar_colors.agg <- c(rep(NE_colors[1], sum(adapt.allele.missing$species == "eachamensis")),
+                    rep(NE_colors[2], sum(adapt.allele.missing$species == "Malanda")),
+                    rep(NE_colors[3], sum(adapt.allele.missing$species == "splendida")),
+                    rep(NE_colors[4], sum(adapt.allele.missing$species == "Tully")),
+                    rep(NE_colors[5], sum(adapt.allele.missing$species == "utcheensis")))
+
+
+
+pdf(file = "adapt_alleles_absent_percent.pdf", height = 6, width = 6)
+par(mar = c(7, 4, 2, 2) + 0.2, bg = "#fdf6e3", fg="#073642")
+x <- barplot(adapt.allele.missing$percent, col=bar_colors.agg,
+             ylim=c(0,30), width = 0.9,
+             border="#fdf6e3", xaxt="n",
+             cex.names = 0.8,
+             cex.axis = 1,
+             beside=TRUE, xpd=T,axes = F,
+             legend=FALSE,
+             cex.lab=0.8)
+axis(1, at=x, labels = adapt.allele.missing$hybrid, cex.axis = 1, tick=F, line = -1, col="#073642", col.lab="#073642", col.axis="#073642")
+axis(2, lwd = 2, cex.axis = 1.2, at = seq(0, 50, 10), las=1, col="#073642", col.lab="#073642", col.axis="#073642")
+title(ylab=expression("Percentage of adaptive alleles absent"), line=2, cex.lab=1.2, col="#073642", col.lab="#073642", col.axis="#073642")
+
+dev.off()
+
+
+
+# format df
+reduced.popNumber <-  as.character(gsub("[[:alpha:]]", "", as.character(levels(droplevels(as.factor(reduced.genp.freq.LH$Pop))))))
+reduced.pop <-  as.character(levels(droplevels(as.factor(reduced.genp.freq.LH$Pop))))
+reduced.species <- as.character(gsub("[[:digit:]]+", "", levels(droplevels(as.factor(reduced.pop)))))
+reduced.pure.hybrid.species <- pure.hybrid.species[rownames(pure.hybrid.species) %in% reduced.pop, ]
 
 
 # get median allele frequency changes between time periods per site 
@@ -348,4 +455,62 @@ colnames(temporal.deltaAF) <- c("EarlyHolocene_Current", "MidHolocene_Current", 
 temporal.deltaAF$pop <- reduced.pop
 temporal.deltaAF$popNumber <-  reduced.popNumber
 temporal.deltaAF$species <-  reduced.species
+
+# subset mean_admix df to same pops as reduced model
+reducded.mean_admix <- mean_admix[mean_admix$site %in% reduced.pop,]
 temporal.deltaAF$splendida_ancestry <- reducded.mean_admix$splendida
+
+
+#set colours and labels for plotting
+species.pop <- as.data.frame(pop.data[,4])
+colnames(species.pop) <- "species"
+unique_species <- as.data.frame(sort(unique(as.factor(species.pop$species))))
+NE_species <- factor(unique_species[,1])
+
+NE_colors <- ggpubfigs::friendly_pal("ito_seven")[c(2,5,1,3,4)]
+scales::show_col(NE_colors)
+names(NE_colors) = levels(NE_species)
+
+# map colours to points
+ind_cols <- mapvalues(pop.data$`NEXY$species`, names(NE_colors), unique(NE_colors))
+names(ind_cols) = pop.data[,1]
+reduced.ind_cols <- ind_cols[names(ind_cols) %in% reduced.pop]
+temporal.deltaAF$colour <- reduced.ind_cols
+
+NE_colors <- temporal.deltaAF$colour
+
+# absolute allele frequency change
+abs.af <- abs(temporal.deltaAF$Current_rcp85_2070)
+#abs.af <- temporal.deltaAF$Current_rcp85_2070
+
+# get lm stats
+mod <- lm(abs.af~temporal.deltaAF$splendida_ancestry)
+modsum <- summary(mod)
+r2 = modsum$adj.r.squared
+
+leg.labs <- c(substitute(paste(italic("M. eachamensis"))),
+              substitute(paste("Malanda rainbowfish")),
+              substitute(paste(italic("M. splendida"))),
+              substitute(paste(italic("M. utcheensis"))))
+
+
+temporal.deltaAF$hybrid <- reduced.pure.hybrid.species$hybrid
+# pop18 is eacham/malanda hybrid, so add manuall
+temporal.deltaAF$hybrid[18] <- "Hybrid"
+
+temporal.deltaAF <- temporal.deltaAF %>% mutate(pch = case_when(stri_detect_fixed(hybrid, "Hybrid") ~ 4,
+                                                                stri_detect_fixed(hybrid, "Pure") ~ 1))
+
+write.table(temporal.deltaAF, "temporal_deltaAF.csv", sep = ",", row.names = FALSE)
+
+
+pdf("deltaAFvsMsplendida_ancestry.pdf", width = 6, height = 6)
+par(bg = "#fdf6e3", fg="#073642")
+plot(temporal.deltaAF$splendida_ancestry, abs.af, type = "n", xlab="", ylab="", cex.axis=1.2, col="#073642", col.lab="#073642", col.axis="#073642")
+box(lwd=2)
+points(temporal.deltaAF$splendida_ancestry, abs.af, col = NE_colors, pch=temporal.deltaAF$pch, cex=2, lwd = 3)
+title(xlab="splendida ancestry", line=2, cex.lab=1.2, col="#073642", col.lab="#073642", col.axis="#073642")
+title(ylab=expression(paste(Delta," allele frequency")), line=2, cex.lab=1.2, col="#073642", col.lab="#073642", col.axis="#073642")
+abline(mod, col="#073642", lwd=2)
+dev.off()
+
