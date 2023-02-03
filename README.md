@@ -13,7 +13,8 @@ This repository contains code to perform the analyses and modeling described in 
 Under climate change, species unable to track their niche via range shifts are largely reliant on genetic variation to adapt and persist. Genomic vulnerability predictions are used to identify populations that lack the necessary variation, particularly at climate relevant genes. However, hybridization as a source of novel adaptive variation is typically ignored in genomic vulnerability studies. We estimated environmental niche models and genomic vulnerability for closely related species of rainbowfish (*Melanotaenia* spp.) across an elevational gradient in the Australian wet tropics. Hybrid populations between a widespread generalist and several narrow range endemic species exhibited reduced vulnerability to projected climates compared to pure narrow endemics. Overlaps between introgressed and adaptive genomic regions were consistent with a signal of adaptive introgression. Our findings highlight the often-underappreciated conservation value of hybrid populations and indicate that adaptive introgression may contribute to evolutionary rescue of species with narrow environmental ranges.
 
 ****
-There is also great a commentary: [Turbek, SP and Taylor, SA (2023) *Hybridization provides climate resilience.* **Nature Climate Change**](https://www.nature.com/articles/s41558-022-01586-0)
+There is also great a commentary discussing the broader context of the paper here: [Turbek, SP and Taylor, SA (2023) *Hybridization provides climate resilience.* **Nature Climate Change**](https://www.nature.com/articles/s41558-022-01586-0)
+****
 
 ## Code
 
