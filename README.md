@@ -30,3 +30,9 @@ The *Melanotaenia duboulayi* reference genome assembly is available at NCBI GenB
 
 
 ## A zip file containing all data and code for the analyses can be downloaded [here](https://github.com/pygmyperch/NER/archive/refs/heads/main.zip)
+
+
+****
+### Note. my code is ugly. Please contact me for help if needed!
+### Chris Brauer&nbsp; [![Alt text](../main/images/mail2.png)](mailto:chris.brauer@flinders.edu.au)
+****
