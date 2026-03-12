@@ -16,10 +16,10 @@ Under climate change, species unable to track their niche via range shifts are l
 There is also great a commentary discussing the broader context of the paper here: [Turbek, SP and Taylor, SA (2023) *Hybridization provides climate resilience.* **Nature Climate Change**](https://www.nature.com/articles/s41558-022-01586-0)
 ****
 And finally, a short comic about the study.
-![P1](../main/images/comic1.pdf)
-![P2](../main/images/comic2.pdf)
-![P3](../main/images/comic3.pdf)
-![P4](../main/images/comic4.pdf)
+![P1](../main/images/comic1.jpg)
+![P2](../main/images/comic2.jpg)
+![P3](../main/images/comic3.jpg)
+![P4](../main/images/comic4.jpg)
 ****
 
 ## Code
