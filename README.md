@@ -39,6 +39,6 @@ The *Melanotaenia duboulayi* reference genome assembly is available at NCBI GenB
 
 
 ****
-### Note. my code is ugly. Please contact me for help if needed!
+### Please contact me for help if needed!
 ### Chris Brauer&nbsp; [![Alt text](../main/images/mail2.png)](mailto:chris.brauer@flinders.edu.au)
 ****
